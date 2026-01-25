@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Vacances scolaires",
+        "description": "Sélectionnez votre zone scolaire:\n{zones_info}",
+        "data": {
+          "zone": "Zone scolaire"
+        }
+      },
+      "academy": {
+        "title": "Sélection de l'académie",
+        "description": "Sélectionnez votre académie pour la Zone {zone}",
+        "data": {
+          "academy": "Académie"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Cette configuration est déjà présente"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Modifier la configuration",
+        "description": "Configuration actuelle: Zone {current_zone} - {current_academy}\n\nSélectionnez votre nouvelle zone scolaire:\n{zones_info}",
+        "data": {
+          "zone": "Zone scolaire"
+        }
+      },
+      "academy": {
+        "title": "Modifier l'académie",
+        "description": "Sélectionnez votre nouvelle académie pour la Zone {zone}",
+        "data": {
+          "academy": "Académie"
+        }
+      }
+    }
+  }
+}
+
