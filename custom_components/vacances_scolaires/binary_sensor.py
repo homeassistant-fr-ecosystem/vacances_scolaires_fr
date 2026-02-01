@@ -8,6 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
 from .const import (
     ATTR_DAYS_REMAINING,
     ATTR_VACANCES_END,
@@ -18,7 +19,7 @@ from .const import (
     CONF_ZONE,
     DOMAIN,
 )
-from .sensor import VacancesDataUpdateCoordinator
+from .coordinator import VacancesDataUpdateCoordinator
 
 
 async def async_setup_entry(
@@ -40,7 +41,7 @@ class VacancesEnCoursBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Binary sensor for current school holidays."""
 
     _attr_name = "Vacances en cours"
-    _attr_unique_id = "vacances_en_cours"
+    _attr_unique_id = "school_holidays_on"
     _attr_icon = "mdi:calendar-check"
     _attr_device_class = "occupancy"
 
@@ -51,7 +52,7 @@ class VacancesEnCoursBinarySensor(CoordinatorEntity, BinarySensorEntity):
         super().__init__(coordinator)
         self.zone = zone
         self.academy = academy
-        self._attr_unique_id = f"vacances_en_cours_{zone}_{academy}"
+        self._attr_unique_id = f"school_holidays_on_{zone}_{academy}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"vacances_scolaires_{zone}_{academy}")},
             name=f"Vacances scolaires - Zone {zone} ({academy})",
@@ -74,7 +75,9 @@ class VacancesEnCoursBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return entity specific state attributes."""
         vacances = self.coordinator.data.get("en_cours")
-        attrs = {}
+        attrs = {
+            "timezone": self.coordinator.timezone,
+        }
 
         if vacances:
             attrs[ATTR_VACANCES_NAME] = vacances["name"]

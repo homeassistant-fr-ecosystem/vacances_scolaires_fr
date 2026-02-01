@@ -2,6 +2,7 @@
 
 from datetime import date, datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
 import aiohttp
 import asyncio
 import bisect
@@ -10,7 +11,7 @@ import json
 import os
 import re
 
-from .const import ZONES_ACADEMIES, ZONES
+from .const import ZONES_ACADEMIES, ZONES, ZONES_DOMTOM, ZONE_TIMEZONES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,13 +25,15 @@ API_LIMIT = 100  # Maximum number of records to fetch
 class VacancesScolairesAPI:
     """Handle vacances scolaires data and logic."""
 
-    def __init__(self, zone: str, academy: Optional[str] = None, hass_config_path: Optional[str] = None):
+    def __init__(self, zone: str, academy: Optional[str] = None, hass_config_path: Optional[str] = None, verify_ssl: bool = True, custom_timezone: Optional[str] = None):
         """Initialize API with selected zone and optional academy."""
-        # Validate zone
-        if zone not in ZONES:
-            raise ValueError(f"Invalid zone '{zone}'. Must be one of: {', '.join(ZONES)}")
+        # Validate zone (métropole ou DOM-TOM)
+        all_zones = ZONES + ZONES_DOMTOM
+        if zone not in all_zones:
+            raise ValueError(f"Invalid zone '{zone}'. Must be one of: {', '.join(all_zones)}")
 
         self.zone = zone
+        self.verify_ssl = verify_ssl
 
         # If no academy provided, use the first one from the zone's academy list
         if academy:
@@ -43,6 +46,16 @@ class VacancesScolairesAPI:
             zone_academies = ZONES_ACADEMIES.get(zone, {})
             self.academy = list(zone_academies.keys())[0] if zone_academies else zone
 
+        # Déterminer le fuseau horaire
+        self.timezone_str = custom_timezone or ZONE_TIMEZONES.get(zone, "Europe/Paris")
+        try:
+            self.timezone = ZoneInfo(self.timezone_str)
+        except Exception as e:
+            _LOGGER.warning("Invalid timezone %s, falling back to Europe/Paris: %s",
+                          self.timezone_str, e)
+            self.timezone = ZoneInfo("Europe/Paris")
+            self.timezone_str = "Europe/Paris"
+
         # Set cache directory (instance variable instead of global)
         if hass_config_path:
             self._cache_dir = os.path.join(hass_config_path, ".storage", "vacances_scolaires")
@@ -53,7 +66,8 @@ class VacancesScolairesAPI:
 
         self._vacances = []
         self._use_static_data = True
-        _LOGGER.info("Initialized API for Zone %s, Academy: %s", zone, self.academy)
+        _LOGGER.info("Initialized API for Zone %s, Academy: %s, Timezone: %s, verify_ssl: %s",
+                    zone, self.academy, self.timezone_str, verify_ssl)
 
     def _get_cache_path(self) -> Optional[str]:
         """Get the cache file path for this zone and academy."""
@@ -123,10 +137,19 @@ class VacancesScolairesAPI:
 
         # If cache is invalid or doesn't exist, fetch from API
         try:
+            # Create SSL context based on verify_ssl setting
+            ssl_context = None if self.verify_ssl else False
+
             async with aiohttp.ClientSession() as session:
                 # Fetch vacances data with zone and academy filters
-                zone_letter = self.zone.upper() if len(self.zone) == 1 else self.zone
-                expected_zone_format = f"Zone {zone_letter}"
+                # Différencier métropole et DOM-TOM
+                if self.zone in ZONES:
+                    # Métropole : utiliser le format "Zone X"
+                    zone_letter = self.zone.upper() if len(self.zone) == 1 else self.zone
+                    expected_zone_format = f"Zone {zone_letter}"
+                else:
+                    # DOM-TOM : utiliser directement le nom de l'académie
+                    expected_zone_format = None
 
                 # Calculate current year and next year for filtering
                 current_year = datetime.now().year
@@ -136,9 +159,13 @@ class VacancesScolairesAPI:
 
                 # Build where clause with zone, academy, date, and population filters
                 # OpenDatasoft API syntax: combine conditions with AND
-                where_clauses = [f'zones="{expected_zone_format}"']
+                where_clauses = []
 
-                # Add academy filter if specified
+                # Pour la métropole, filtrer par zone
+                if expected_zone_format:
+                    where_clauses.append(f'zones="{expected_zone_format}"')
+
+                # Add academy filter (pour métropole si spécifié, pour DOM-TOM toujours)
                 if self.academy:
                     # The API uses 'location' field for academy names
                     where_clauses.append(f'location="{self.academy}"')
@@ -157,8 +184,8 @@ class VacancesScolairesAPI:
                     "limit": API_LIMIT,
                     "where": where_condition,
                 }
-                _LOGGER.debug("Fetching from API for years %s-%s: %s with params: %s", current_year, next_year, VACANCES_API_URL, params)
-                async with session.get(VACANCES_API_URL, params=params, timeout=aiohttp.ClientTimeout(total=API_TIMEOUT)) as resp:
+                _LOGGER.debug("Fetching from API for years %s-%s: %s with params: %s (verify_ssl=%s)", current_year, next_year, VACANCES_API_URL, params, self.verify_ssl)
+                async with session.get(VACANCES_API_URL, params=params, timeout=aiohttp.ClientTimeout(total=API_TIMEOUT), ssl=ssl_context) as resp:
                     _LOGGER.debug("API response status: %d", resp.status)
                     if resp.status == 200:
                         data = await resp.json()
@@ -241,6 +268,7 @@ class VacancesScolairesAPI:
                     "end": datetime.fromisoformat(record.get("end_date", "")).date(),
                     "zones": [zones_str],
                     "academy": location_str if location_str else self.academy,
+                    "timezone": self.timezone_str,
                 }
                 self._vacances.append(vacance)
                 _LOGGER.debug("Added vacation: %s (%s to %s) for zone %s, academy %s", vacance['name'], vacance['start'], vacance['end'], zones_str, location_str)
@@ -257,11 +285,13 @@ class VacancesScolairesAPI:
         """Get current school holidays if any.
 
         Uses binary search for O(log n) performance since _vacances is sorted by start date.
+        Uses timezone-aware date for DOM-TOM.
         """
         if not self._vacances:
             return None
 
-        today = date.today()
+        # Utiliser la date actuelle dans le fuseau horaire de la zone
+        today = datetime.now(self.timezone).date()
 
         # Binary search to find the vacation period containing today
         # We need to find a vacation where start <= today <= end
@@ -291,11 +321,13 @@ class VacancesScolairesAPI:
         """Get next school holidays.
 
         Uses binary search for O(log n) performance since _vacances is sorted by start date.
+        Uses timezone-aware date for DOM-TOM.
         """
         if not self._vacances:
             return None
 
-        today = date.today()
+        # Utiliser la date actuelle dans le fuseau horaire de la zone
+        today = datetime.now(self.timezone).date()
 
         # Binary search to find the first vacation that starts after today
         start_dates = [v["start"] for v in self._vacances]
@@ -309,19 +341,19 @@ class VacancesScolairesAPI:
         return None
 
     def get_jours_avant_vacances(self) -> Optional[int]:
-        """Get days until next school holidays."""
+        """Get days until next school holidays with timezone awareness."""
         prochaines = self.get_prochaines_vacances()
         if prochaines:
-            today = date.today()
+            today = datetime.now(self.timezone).date()
             delta = prochaines["start"] - today
             return delta.days
         return None
 
     def get_jours_restants_vacances(self) -> Optional[int]:
-        """Get remaining days of current school holidays."""
+        """Get remaining days of current school holidays with timezone awareness."""
         vacances_en_cours = self.get_vacances_en_cours()
         if vacances_en_cours:
-            today = date.today()
+            today = datetime.now(self.timezone).date()
             delta = vacances_en_cours["end"] - today
             return max(0, delta.days + 1)  # +1 pour inclure le dernier jour
         return None

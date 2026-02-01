@@ -8,8 +8,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
 from .const import CONF_ZONE, CONF_ACADEMY, DOMAIN
-from .sensor import VacancesDataUpdateCoordinator
+from .coordinator import VacancesDataUpdateCoordinator
 
 
 async def async_setup_entry(
@@ -38,7 +39,7 @@ class VacancesScholairesCalendar(CoordinatorEntity, CalendarEntity):
         super().__init__(coordinator)
         self.zone = zone
         self.academy = academy
-        self._attr_unique_id = f"vacances_scolaires_calendar_{zone}_{academy}"
+        self._attr_unique_id = f"school_holidays_calendar_{zone}_{academy}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"vacances_scolaires_{zone}_{academy}")},
             name=f"Vacances scolaires - Zone {zone} ({academy})",
