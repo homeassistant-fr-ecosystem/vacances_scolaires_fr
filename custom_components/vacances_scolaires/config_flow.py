@@ -56,28 +56,6 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Create zone choices with description and academies list
         zone_choices = {}
-        zones_info_parts = []
-
-        # Zones métropolitaines
-        zones_info_parts.append("=== MÉTROPOLE ===")
-        for zone in ZONES:
-            academies = ZONES_ACADEMIES.get(zone, {})
-            academy_count = len(academies)
-            zone_choices[zone] = f"Zone {zone} - Métropole ({academy_count} académies)"
-
-            academy_names = ", ".join(list(academies.keys())[:3])
-            if academy_count > 3:
-                academy_names += f"... (+{academy_count - 3})"
-            zones_info_parts.append(f"Zone {zone}: {academy_names}")
-
-        # Zones DOM-TOM
-        zones_info_parts.append("\n=== DOM-TOM ===")
-        for zone in ZONES_DOMTOM:
-            timezone_info = ZONE_TIMEZONES.get(zone, "Europe/Paris")
-            # Extraire le décalage UTC du timezone (simplifié)
-            utc_offset = timezone_info.split("/")[-1]
-            zone_choices[zone] = f"{zone} ({timezone_info})"
-            zones_info_parts.append(f"{zone}: {timezone_info}")
 
         schema = vol.Schema(
             {
@@ -88,9 +66,7 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=schema,
-            description_placeholders={
-                "zones_info": "\n".join(zones_info_parts)
-            },
+            description_placeholders={},
         )
 
     async def async_step_academy(
@@ -169,7 +145,7 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
-        self.config_entry = config_entry
+        super().__init__()
         self._selected_zone: Optional[str] = None
 
     async def async_step_init(
@@ -187,10 +163,29 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
         current_zone = self.config_entry.data.get(CONF_ZONE)
         current_academy = self.config_entry.data.get(CONF_ACADEMY)
 
+        # Create zone choices with description and academies list
+        zones_info_parts = []
+
+        # Zones métropolitaines
+        zones_info_parts.append("=== MÉTROPOLE ===")
+        for zone in ZONES:
+            academies = ZONES_ACADEMIES.get(zone, {})
+            academy_names = ", ".join(list(academies.keys())[:3])
+            academy_count = len(academies)
+            if academy_count > 3:
+                academy_names += f"... (+{academy_count - 3})"
+            zones_info_parts.append(f"Zone {zone}: {academy_names}")
+
+        # Zones DOM-TOM
+        zones_info_parts.append("\n=== DOM-TOM ===")
+        for zone in ZONES_DOMTOM:
+            timezone_info = ZONE_TIMEZONES.get(zone, "Europe/Paris")
+            zones_info_parts.append(f"{zone}: {timezone_info}")
+
         schema = vol.Schema(
             {
                 vol.Required("option_type"): vol.In({
-                    "zone_academy": f"Zone et Académie (actuellement: Zone {current_zone}, {current_academy})",
+                    "zone_academy": f"Zone et Académie",
                     "advanced": "Options avancées (intervalle, SSL, calendrier)",
                 }),
             }
@@ -199,6 +194,10 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=schema,
+            description_placeholders={
+                "current_zone": current_zone,
+                "current_academy": current_academy
+            },
         )
 
     async def async_step_zone(

@@ -24,6 +24,14 @@
     "step": {
       "init": {
         "title": "Modifier la configuration",
+        "description": "Configuration actuelle: Zone {current_zone} - {current_academy}\n\nSélectionnez une option à modifier.",
+        "data": {
+          "zone_academy": "Zone et Académie (actuellement: Zone {current_zone}, {current_academy})",
+          "advanced": "Options avancées"
+        }
+      },
+      "zone": {
+        "title": "Modifier la zone scolaire",
         "description": "Configuration actuelle: Zone {current_zone} - {current_academy}\n\nSélectionnez votre nouvelle zone scolaire:\n{zones_info}",
         "data": {
           "zone": "Zone scolaire"
@@ -34,6 +42,15 @@
         "description": "Sélectionnez votre nouvelle académie pour la Zone {zone}",
         "data": {
           "academy": "Académie"
+        }
+      },
+      "advanced": {
+        "title": "Options avancées",
+        "description": "Définissez les options avancées de l'intégration.",
+        "data": {
+          "update_interval": "Intervalle de mise à jour (minutes)",
+          "verify_ssl": "Vérifier le certificat SSL",
+          "create_calendar": "Créer des entités de calendrier"
         }
       }
     }
