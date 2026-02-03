@@ -1,65 +1,33 @@
-name: Manual Release
+name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag_name:
-        description: 'Release tag name (e.g., v1.2.3)'
-        required: true
-        type: string
-      release_title:
-        description: 'Release title (optional)'
-        required: false
-        type: string
-
-permissions:
-  contents: write
+  release:
+    types:
+      - published
 
 jobs:
-  manual-release:
-    name: 'Create Manual Release'
+  release:
+    name: Prepare release
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
-      - name: 'Checkout source code'
-        uses: 'actions/checkout@v3'
-        with:
-          fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: 'Determine release type'
-        id: release-type
+      - name: Update manifest version
         run: |
-          if [[ "${{ github.ref_name }}" == "release" ]]; then
-            echo "prerelease=false" >> $GITHUB_OUTPUT
-            echo "release_type=Release" >> $GITHUB_OUTPUT
-          else
-            echo "prerelease=true" >> $GITHUB_OUTPUT
-            echo "release_type=Pre-release" >> $GITHUB_OUTPUT
-          fi
+          version="${{ github.event.release.tag_name }}"
+          version="${version#v}"
+          jq --arg v "$version" '.version = $v' custom_components/vacances_scolaires/manifest.json > tmp.json
+          mv tmp.json custom_components/vacances_scolaires/manifest.json
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Create release zip
+        run: |
+          cd custom_components
+          zip -r ../vacances_scolaires.zip vacances_scolaires
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
         with:
-          node-version: '24'
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-      - name: Build
-        run: yarn build
-
-      - name: Generate release notes
-        id: create-release-notes
-        uses: johnyherangi/create-release-notes@main
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        with:
-          makeLatest: true
-          artifacts: 'dist/**'
-          generateReleaseNotes: true
-          tag: ${{ inputs.tag_name }}
-          name: ${{ inputs.release_title || format('{0} - {1} from {2}', inputs.tag_name, steps.release-type.outputs.release_type, github.ref_name) }}
-          body: ${{ steps.create-release-notes.outputs.release-notes }}
-          prerelease: ${{ steps.release-type.outputs.prerelease }}
-          draft: false
+          files: vacances_scolaires.zip
