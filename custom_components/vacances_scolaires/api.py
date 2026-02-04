@@ -59,8 +59,6 @@ class VacancesScolairesAPI:
         # Set cache directory (instance variable instead of global)
         if hass_config_path:
             self._cache_dir = os.path.join(hass_config_path, ".storage", "vacances_scolaires")
-            # Create cache directory with restrictive permissions (owner only)
-            os.makedirs(self._cache_dir, mode=0o700, exist_ok=True)
         else:
             self._cache_dir = None
 
@@ -68,6 +66,11 @@ class VacancesScolairesAPI:
         self._use_static_data = True
         _LOGGER.info("Initialized API for Zone %s, Academy: %s, Timezone: %s, verify_ssl: %s",
                     zone, self.academy, self.timezone_str, verify_ssl)
+
+    async def _ensure_cache_dir(self) -> None:
+        """Ensure the cache directory exists."""
+        if self._cache_dir:
+            await asyncio.to_thread(os.makedirs, self._cache_dir, mode=0o700, exist_ok=True)
 
     def _get_cache_path(self) -> Optional[str]:
         """Get the cache file path for this zone and academy."""
@@ -79,8 +82,12 @@ class VacancesScolairesAPI:
         safe_zone = re.sub(r'[^\w\-]', '_', self.zone)
         return os.path.join(self._cache_dir, f"vacances_{safe_zone}_{safe_academy}.json")
 
-    def _is_cache_valid(self) -> bool:
+    async def _is_cache_valid(self) -> bool:
         """Check if cache file exists and is still valid."""
+        return await asyncio.to_thread(self._is_cache_valid_sync)
+
+    def _is_cache_valid_sync(self) -> bool:
+        """Check if cache file exists and is still valid (sync)."""
         cache_path = self._get_cache_path()
         if not cache_path or not os.path.exists(cache_path):
             return False
@@ -131,8 +138,11 @@ class VacancesScolairesAPI:
 
     async def async_fetch_vacances(self) -> bool:
         """Fetch vacances from data.gouv.fr API with caching."""
+        # Ensure cache directory exists
+        await self._ensure_cache_dir()
+
         # Try to load from cache first
-        if self._is_cache_valid():
+        if await self._is_cache_valid():
             return await self._load_from_cache()
 
         # If cache is invalid or doesn't exist, fetch from API
