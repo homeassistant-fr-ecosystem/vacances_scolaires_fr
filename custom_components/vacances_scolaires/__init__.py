@@ -3,7 +3,7 @@
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, CONF_ZONE, CONF_CREATE_CALENDAR, DEFAULT_CREATE_CALENDAR
+from .const import CONF_CREATE_CALENDAR, CONF_ZONE, DEFAULT_CREATE_CALENDAR, DOMAIN
 from .coordinator import VacancesDataUpdateCoordinator
 
 
@@ -28,7 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Add calendar platform if requested
     create_calendar = entry.options.get(
         CONF_CREATE_CALENDAR,
-        entry.data.get(CONF_CREATE_CALENDAR, DEFAULT_CREATE_CALENDAR)
+        entry.data.get(CONF_CREATE_CALENDAR, DEFAULT_CREATE_CALENDAR),
     )
 
     if create_calendar:
@@ -54,7 +54,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     create_calendar = entry.options.get(
         CONF_CREATE_CALENDAR,
-        entry.data.get(CONF_CREATE_CALENDAR, DEFAULT_CREATE_CALENDAR)
+        entry.data.get(CONF_CREATE_CALENDAR, DEFAULT_CREATE_CALENDAR),
     )
 
     if create_calendar:

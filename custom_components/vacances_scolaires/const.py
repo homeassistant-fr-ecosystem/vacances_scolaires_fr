@@ -93,7 +93,9 @@ DOMTOM_ACADEMIES = {
     ZONE_NOUVELLE_CALEDONIE: {"Nouvelle-Calédonie": "Nouvelle-Calédonie"},
     ZONE_POLYNESIE: {"Polynésie française": "Polynésie française"},
     ZONE_WALLIS_FUTUNA: {"Wallis-et-Futuna": "Wallis-et-Futuna"},
-    ZONE_SAINT_PIERRE_MIQUELON: {"Saint-Pierre-et-Miquelon": "Saint-Pierre-et-Miquelon"},
+    ZONE_SAINT_PIERRE_MIQUELON: {
+        "Saint-Pierre-et-Miquelon": "Saint-Pierre-et-Miquelon"
+    },
 }
 
 # Fuseaux horaires par zone

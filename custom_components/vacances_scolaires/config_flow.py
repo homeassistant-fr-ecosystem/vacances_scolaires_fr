@@ -1,28 +1,28 @@
 """Config flow for vacances_scolaires_fr integration."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import callback
 
 from .const import (
-    CONF_ZONE,
     CONF_ACADEMY,
-    CONF_UPDATE_INTERVAL,
-    CONF_VERIFY_SSL,
     CONF_CREATE_CALENDAR,
     CONF_TIMEZONE,
-    DEFAULT_UPDATE_INTERVAL,
-    DEFAULT_VERIFY_SSL,
+    CONF_UPDATE_INTERVAL,
+    CONF_VERIFY_SSL,
+    CONF_ZONE,
     DEFAULT_CREATE_CALENDAR,
     DEFAULT_TIMEZONE,
+    DEFAULT_UPDATE_INTERVAL,
+    DEFAULT_VERIFY_SSL,
     DOMAIN,
-    ZONES,
-    ZONES_DOMTOM,
-    ALL_ZONES,
-    ZONES_ACADEMIES,
     ZONE_TIMEZONES,
+    ZONES,
+    ZONES_ACADEMIES,
+    ZONES_DOMTOM,
 )
 
 
@@ -37,13 +37,15 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> "VacancesScolairesOptionsFlow":
         """Get the options flow for this handler."""
         return VacancesScolairesOptionsFlow(config_entry)
 
     async def async_step_user(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> config_entries.FlowResult:
+        self, user_input: Optional[dict[str, Any]] = None
+    ) -> ConfigFlowResult:
         """Handle the initial step (zone selection)."""
         # Check if there's already a config entry
         await self.async_set_unique_id("vacances_scolaires_fr")
@@ -55,7 +57,18 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_academy()
 
         # Create zone choices with description and academies list
-        zone_choices = {}
+        zone_choices: dict[str, str] = {}
+
+        # Zones métropolitaines
+        for zone in ZONES:
+            academies = ZONES_ACADEMIES.get(zone, {})
+            academy_count = len(academies)
+            zone_choices[zone] = f"Zone {zone} - Métropole ({academy_count} académies)"
+
+        # Zones DOM-TOM
+        for zone in ZONES_DOMTOM:
+            timezone_info = ZONE_TIMEZONES.get(zone, "Europe/Paris")
+            zone_choices[zone] = f"{zone} ({timezone_info})"
 
         schema = vol.Schema(
             {
@@ -70,17 +83,24 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_academy(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> config_entries.FlowResult:
+        self, user_input: Optional[dict[str, Any]] = None
+    ) -> ConfigFlowResult:
         """Handle the academy selection step."""
         if user_input is not None:
             # Create the config entry with selected zone, academy, and default options
             academy = user_input[CONF_ACADEMY]
-            update_interval = user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
+            update_interval = user_input.get(
+                CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
+            )
             verify_ssl = user_input.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL)
-            create_calendar = user_input.get(CONF_CREATE_CALENDAR, DEFAULT_CREATE_CALENDAR)
+            create_calendar = user_input.get(
+                CONF_CREATE_CALENDAR, DEFAULT_CREATE_CALENDAR
+            )
 
             # Déterminer le timezone par défaut pour la zone
+            if self._selected_zone is None:
+                return self.async_abort(reason="unknown_zone")
+
             default_timezone = ZONE_TIMEZONES.get(self._selected_zone, DEFAULT_TIMEZONE)
             timezone = user_input.get(CONF_TIMEZONE, default_timezone)
 
@@ -103,6 +123,9 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         # Get academies and timezone for the selected zone
+        if self._selected_zone is None:
+            return self.async_abort(reason="unknown_zone")
+
         academies = ZONES_ACADEMIES.get(self._selected_zone, {})
         default_timezone = ZONE_TIMEZONES.get(self._selected_zone, DEFAULT_TIMEZONE)
 
@@ -116,16 +139,11 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_ACADEMY): vol.In(academy_choices),
                 vol.Optional(CONF_TIMEZONE, default=default_timezone): str,
                 vol.Optional(
-                    CONF_UPDATE_INTERVAL,
-                    default=DEFAULT_UPDATE_INTERVAL
+                    CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL
                 ): vol.All(vol.Coerce(int), vol.Range(min=1, max=30)),
+                vol.Optional(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): bool,
                 vol.Optional(
-                    CONF_VERIFY_SSL,
-                    default=DEFAULT_VERIFY_SSL
-                ): bool,
-                vol.Optional(
-                    CONF_CREATE_CALENDAR,
-                    default=DEFAULT_CREATE_CALENDAR
+                    CONF_CREATE_CALENDAR, default=DEFAULT_CREATE_CALENDAR
                 ): bool,
             }
         )
@@ -145,12 +163,12 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
-        super().__init__()
+        self.config_entry = config_entry
         self._selected_zone: Optional[str] = None
 
     async def async_step_init(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> config_entries.FlowResult:
+        self, user_input: Optional[dict[str, Any]] = None
+    ) -> ConfigFlowResult:
         """Manage the options - main menu."""
         if user_input is not None:
             choice = user_input.get("option_type")
@@ -184,10 +202,12 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
 
         schema = vol.Schema(
             {
-                vol.Required("option_type"): vol.In({
-                    "zone_academy": f"Zone et Académie",
-                    "advanced": "Options avancées (intervalle, SSL, calendrier)",
-                }),
+                vol.Required("option_type"): vol.In(
+                    {
+                        "zone_academy": "Zone et Académie",
+                        "advanced": "Options avancées (intervalle, SSL, calendrier)",
+                    }
+                ),
             }
         )
 
@@ -195,14 +215,14 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=schema,
             description_placeholders={
-                "current_zone": current_zone,
-                "current_academy": current_academy
+                "current_zone": str(current_zone),
+                "current_academy": str(current_academy),
             },
         )
 
     async def async_step_zone(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> config_entries.FlowResult:
+        self, user_input: Optional[dict[str, Any]] = None
+    ) -> ConfigFlowResult:
         """Manage zone selection."""
         if user_input is not None:
             # Store the selected zone and move to academy selection
@@ -247,18 +267,21 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
             data_schema=schema,
             description_placeholders={
                 "zones_info": "\n".join(zones_info_parts),
-                "current_zone": current_zone,
-                "current_academy": current_academy,
+                "current_zone": str(current_zone),
+                "current_academy": str(current_academy),
             },
         )
 
     async def async_step_academy(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> config_entries.FlowResult:
+        self, user_input: Optional[dict[str, Any]] = None
+    ) -> ConfigFlowResult:
         """Handle the academy selection step in options."""
         if user_input is not None:
             # Update the config entry with new zone and academy
             academy = user_input[CONF_ACADEMY]
+
+            if self._selected_zone is None:
+                return self.async_abort(reason="unknown_zone")
 
             # Preserve existing options
             new_data = {
@@ -303,6 +326,9 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
         current_academy = self.config_entry.data.get(CONF_ACADEMY)
 
         # Get academies for the selected zone
+        if self._selected_zone is None:
+            return self.async_abort(reason="unknown_zone")
+
         academies = ZONES_ACADEMIES.get(self._selected_zone, {})
 
         # Create academy choices with full descriptions
@@ -311,11 +337,17 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
             academy_choices[academy_key] = academy_desc
 
         # Set default to current academy if it's in the new zone, otherwise first academy
-        default_academy = current_academy if current_academy in academies else list(academies.keys())[0]
+        default_academy = (
+            current_academy
+            if current_academy in academies
+            else list(academies.keys())[0]
+        )
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_ACADEMY, default=default_academy): vol.In(academy_choices),
+                vol.Required(CONF_ACADEMY, default=default_academy): vol.In(
+                    academy_choices
+                ),
             }
         )
 
@@ -328,17 +360,21 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_advanced(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> config_entries.FlowResult:
+        self, user_input: Optional[dict[str, Any]] = None
+    ) -> ConfigFlowResult:
         """Handle advanced options."""
         if user_input is not None:
             # Update options with new values while preserving zone/academy
             new_data = {
                 CONF_ZONE: self.config_entry.data.get(CONF_ZONE),
                 CONF_ACADEMY: self.config_entry.data.get(CONF_ACADEMY),
-                CONF_UPDATE_INTERVAL: user_input.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
+                CONF_UPDATE_INTERVAL: user_input.get(
+                    CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
+                ),
                 CONF_VERIFY_SSL: user_input.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL),
-                CONF_CREATE_CALENDAR: user_input.get(CONF_CREATE_CALENDAR, DEFAULT_CREATE_CALENDAR),
+                CONF_CREATE_CALENDAR: user_input.get(
+                    CONF_CREATE_CALENDAR, DEFAULT_CREATE_CALENDAR
+                ),
             }
 
             # Store in options for dynamic updates
@@ -360,30 +396,25 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
         # Get current values
         current_update_interval = self.config_entry.options.get(
             CONF_UPDATE_INTERVAL,
-            self.config_entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
+            self.config_entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
         )
         current_verify_ssl = self.config_entry.options.get(
             CONF_VERIFY_SSL,
-            self.config_entry.data.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL)
+            self.config_entry.data.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL),
         )
         current_create_calendar = self.config_entry.options.get(
             CONF_CREATE_CALENDAR,
-            self.config_entry.data.get(CONF_CREATE_CALENDAR, DEFAULT_CREATE_CALENDAR)
+            self.config_entry.data.get(CONF_CREATE_CALENDAR, DEFAULT_CREATE_CALENDAR),
         )
 
         schema = vol.Schema(
             {
                 vol.Optional(
-                    CONF_UPDATE_INTERVAL,
-                    default=current_update_interval
+                    CONF_UPDATE_INTERVAL, default=current_update_interval
                 ): vol.All(vol.Coerce(int), vol.Range(min=1, max=30)),
+                vol.Optional(CONF_VERIFY_SSL, default=current_verify_ssl): bool,
                 vol.Optional(
-                    CONF_VERIFY_SSL,
-                    default=current_verify_ssl
-                ): bool,
-                vol.Optional(
-                    CONF_CREATE_CALENDAR,
-                    default=current_create_calendar
+                    CONF_CREATE_CALENDAR, default=current_create_calendar
                 ): bool,
             }
         )

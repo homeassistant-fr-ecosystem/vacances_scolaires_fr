@@ -8,7 +8,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import VacancesScolairesAPI
-from .const import CONF_UPDATE_INTERVAL, CONF_VERIFY_SSL, CONF_TIMEZONE, DEFAULT_UPDATE_INTERVAL, DEFAULT_VERIFY_SSL, DEFAULT_TIMEZONE
+from .const import (
+    CONF_TIMEZONE,
+    CONF_UPDATE_INTERVAL,
+    CONF_VERIFY_SSL,
+    DEFAULT_TIMEZONE,
+    DEFAULT_UPDATE_INTERVAL,
+    DEFAULT_VERIFY_SSL,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,20 +23,21 @@ _LOGGER = logging.getLogger(__name__)
 class VacancesDataUpdateCoordinator(DataUpdateCoordinator):
     """Coordinator to manage vacances scolaires data."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, zone: str, academy: str = "") -> None:
+    def __init__(
+        self, hass: HomeAssistant, entry: ConfigEntry, zone: str, academy: str = ""
+    ) -> None:
         """Initialize coordinator."""
         self.entry = entry
 
         # Get update interval from options or config
         update_interval_days = entry.options.get(
             CONF_UPDATE_INTERVAL,
-            entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
+            entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
         )
 
         # Get verify_ssl from options or config
         verify_ssl = entry.options.get(
-            CONF_VERIFY_SSL,
-            entry.data.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL)
+            CONF_VERIFY_SSL, entry.data.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL)
         )
 
         # Get custom timezone from config
@@ -46,7 +54,7 @@ class VacancesDataUpdateCoordinator(DataUpdateCoordinator):
             academy,
             hass.config.path(),
             verify_ssl=verify_ssl,
-            custom_timezone=custom_timezone
+            custom_timezone=custom_timezone,
         )
         self.zone = zone
         self.academy = academy

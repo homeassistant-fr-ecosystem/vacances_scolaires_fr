@@ -2,7 +2,10 @@
 
 from typing import Any
 
-from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -10,12 +13,12 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    ATTR_ACADEMY,
     ATTR_DAYS_REMAINING,
     ATTR_VACANCES_END,
     ATTR_VACANCES_NAME,
     ATTR_VACANCES_START,
     ATTR_VACANCES_ZONE,
-    ATTR_ACADEMY,
     CONF_ZONE,
     DOMAIN,
 )
@@ -37,13 +40,14 @@ async def async_setup_entry(
     async_add_entities([VacancesEnCoursBinarySensor(coordinator, zone, academy)])
 
 
-class VacancesEnCoursBinarySensor(CoordinatorEntity, BinarySensorEntity):
+class VacancesEnCoursBinarySensor(
+    CoordinatorEntity[VacancesDataUpdateCoordinator], BinarySensorEntity
+):
     """Binary sensor for current school holidays."""
 
     _attr_name = "Vacances en cours"
-    _attr_unique_id = "school_holidays_on"
     _attr_icon = "mdi:calendar-check"
-    _attr_device_class = "occupancy"
+    _attr_device_class = BinarySensorDeviceClass.OCCUPANCY
 
     def __init__(
         self, coordinator: VacancesDataUpdateCoordinator, zone: str, academy: str = ""
@@ -61,7 +65,7 @@ class VacancesEnCoursBinarySensor(CoordinatorEntity, BinarySensorEntity):
         )
 
     @property
-    def device_info(self) -> DeviceInfo:
+    def device_info(self) -> DeviceInfo | None:
         """Return device information."""
         return self._attr_device_info
 

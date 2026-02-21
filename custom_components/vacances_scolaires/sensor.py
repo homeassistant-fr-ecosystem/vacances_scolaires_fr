@@ -11,12 +11,12 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    ATTR_ACADEMY,
     ATTR_DAYS_UNTIL,
     ATTR_VACANCES_END,
     ATTR_VACANCES_NAME,
     ATTR_VACANCES_START,
     ATTR_VACANCES_ZONE,
-    ATTR_ACADEMY,
     CONF_ZONE,
     DOMAIN,
 )
@@ -46,14 +46,17 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class ProchainevacancesSensor(CoordinatorEntity, SensorEntity):
+class ProchainevacancesSensor(
+    CoordinatorEntity[VacancesDataUpdateCoordinator], SensorEntity
+):
     """Sensor for next school holidays."""
 
     _attr_name = "Prochaines vacances"
-    _attr_unique_id = "next_school_holidays"
     _attr_icon = "mdi:calendar-clock"
 
-    def __init__(self, coordinator: VacancesDataUpdateCoordinator, zone: str, academy: str = "") -> None:
+    def __init__(
+        self, coordinator: VacancesDataUpdateCoordinator, zone: str, academy: str = ""
+    ) -> None:
         """Initialize sensor."""
         super().__init__(coordinator)
         self.zone = zone
@@ -67,12 +70,12 @@ class ProchainevacancesSensor(CoordinatorEntity, SensorEntity):
         )
 
     @property
-    def device_info(self) -> DeviceInfo:
+    def device_info(self) -> DeviceInfo | None:
         """Return device information."""
         return self._attr_device_info
 
     @property
-    def state(self) -> str | None:
+    def native_value(self) -> str | None:
         """Return sensor state (date of next vacances start)."""
         vacances = self.coordinator.data.get("prochaines")
         return vacances["start"].isoformat() if vacances else None
@@ -96,15 +99,18 @@ class ProchainevacancesSensor(CoordinatorEntity, SensorEntity):
         return attrs
 
 
-class JoursAvantVacancesSensor(CoordinatorEntity, SensorEntity):
+class JoursAvantVacancesSensor(
+    CoordinatorEntity[VacancesDataUpdateCoordinator], SensorEntity
+):
     """Sensor for days until next school holidays."""
 
     _attr_name = "Jours avant vacances"
-    _attr_unique_id = "days_until_holidays"
     _attr_icon = "mdi:calendar-range"
-    _attr_unit_of_measurement = "jours"
+    _attr_native_unit_of_measurement = "jours"
 
-    def __init__(self, coordinator: VacancesDataUpdateCoordinator, zone: str, academy: str = "") -> None:
+    def __init__(
+        self, coordinator: VacancesDataUpdateCoordinator, zone: str, academy: str = ""
+    ) -> None:
         """Initialize sensor."""
         super().__init__(coordinator)
         self.zone = zone
@@ -118,24 +124,27 @@ class JoursAvantVacancesSensor(CoordinatorEntity, SensorEntity):
         )
 
     @property
-    def device_info(self) -> DeviceInfo:
+    def device_info(self) -> DeviceInfo | None:
         """Return device information."""
         return self._attr_device_info
 
     @property
-    def state(self) -> int | None:
+    def native_value(self) -> int | None:
         """Return sensor state."""
         return self.coordinator.data.get("jours_avant")
 
 
-class ZoneScholaireSensor(CoordinatorEntity, SensorEntity):
+class ZoneScholaireSensor(
+    CoordinatorEntity[VacancesDataUpdateCoordinator], SensorEntity
+):
     """Sensor for the school zone."""
 
     _attr_name = "Zone scolaire"
-    _attr_unique_id = "school_zone"
     _attr_icon = "mdi:map-marker"
 
-    def __init__(self, coordinator: VacancesDataUpdateCoordinator, zone: str, academy: str = "") -> None:
+    def __init__(
+        self, coordinator: VacancesDataUpdateCoordinator, zone: str, academy: str = ""
+    ) -> None:
         """Initialize sensor."""
         super().__init__(coordinator)
         self.zone = zone
@@ -149,12 +158,12 @@ class ZoneScholaireSensor(CoordinatorEntity, SensorEntity):
         )
 
     @property
-    def device_info(self) -> DeviceInfo:
+    def device_info(self) -> DeviceInfo | None:
         """Return device information."""
         return self._attr_device_info
 
     @property
-    def state(self) -> str:
+    def native_value(self) -> str:
         """Return sensor state."""
         return self.zone
 

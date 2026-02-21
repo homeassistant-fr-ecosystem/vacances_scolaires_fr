@@ -9,7 +9,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_ZONE, CONF_ACADEMY, DOMAIN
+from .const import CONF_ACADEMY, CONF_ZONE, DOMAIN
 from .coordinator import VacancesDataUpdateCoordinator
 
 
@@ -28,13 +28,17 @@ async def async_setup_entry(
     async_add_entities([VacancesScholairesCalendar(coordinator, zone, academy)])
 
 
-class VacancesScholairesCalendar(CoordinatorEntity, CalendarEntity):
+class VacancesScholairesCalendar(
+    CoordinatorEntity[VacancesDataUpdateCoordinator], CalendarEntity
+):
     """Calendar entity for school holidays."""
 
     _attr_name = "Vacances scolaires"
     _attr_icon = "mdi:calendar"
 
-    def __init__(self, coordinator: VacancesDataUpdateCoordinator, zone: str, academy: str = "") -> None:
+    def __init__(
+        self, coordinator: VacancesDataUpdateCoordinator, zone: str, academy: str = ""
+    ) -> None:
         """Initialize calendar."""
         super().__init__(coordinator)
         self.zone = zone
@@ -49,7 +53,7 @@ class VacancesScholairesCalendar(CoordinatorEntity, CalendarEntity):
         self.api = coordinator.api
 
     @property
-    def device_info(self) -> DeviceInfo:
+    def device_info(self) -> DeviceInfo | None:
         """Return device information."""
         return self._attr_device_info
 
@@ -75,7 +79,10 @@ class VacancesScholairesCalendar(CoordinatorEntity, CalendarEntity):
 
         for vacances in all_vacances:
             # Only include events that overlap with the requested date range
-            if vacances["end"] >= start_date.date() and vacances["start"] <= end_date.date():
+            if (
+                vacances["end"] >= start_date.date()
+                and vacances["start"] <= end_date.date()
+            ):
                 events.append(
                     CalendarEvent(
                         summary=vacances["name"],
