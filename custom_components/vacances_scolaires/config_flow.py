@@ -47,10 +47,6 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: Optional[dict[str, Any]] = None
     ) -> ConfigFlowResult:
         """Handle the initial step (zone selection)."""
-        # Check if there's already a config entry
-        await self.async_set_unique_id("vacances_scolaires_fr")
-        self._abort_if_unique_id_configured()
-
         if user_input is not None:
             # Store the selected zone and move to academy selection
             self._selected_zone = user_input[CONF_ZONE]
@@ -100,6 +96,12 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Déterminer le timezone par défaut pour la zone
             if self._selected_zone is None:
                 return self.async_abort(reason="unknown_zone")
+
+            # Unique ID scoped to zone+academy so multiple entries are allowed
+            await self.async_set_unique_id(
+                f"vacances_scolaires_{self._selected_zone}_{academy}"
+            )
+            self._abort_if_unique_id_configured()
 
             default_timezone = ZONE_TIMEZONES.get(self._selected_zone, DEFAULT_TIMEZONE)
             timezone = user_input.get(CONF_TIMEZONE, default_timezone)
@@ -309,6 +311,16 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
                 title = f"Vacances scolaires - Zone {self._selected_zone} ({academy})"
             else:
                 title = f"Vacances scolaires - {self._selected_zone}"
+
+            # Clear the old cache before switching to the new zone/academy so
+            # stale files don't accumulate in .storage/vacances_scolaires/
+            old_coordinator = (
+                self.hass.data.get(DOMAIN, {})
+                .get(self.config_entry.entry_id, {})
+                .get("coordinator")
+            )
+            if old_coordinator is not None:
+                await old_coordinator.api.async_clear_cache()
 
             # Update the config entry data
             self.hass.config_entries.async_update_entry(

@@ -77,7 +77,8 @@ ZONE_B_ACADEMIES = {
 # Zone C Academies
 ZONE_C_ACADEMIES = {
     "Créteil": "Créteil, Île-de-France",
-    "Île-de-France": "Île-de-France (Paris, Versailles)",
+    "Paris": "Paris, Île-de-France",
+    "Versailles": "Versailles, Île-de-France",
     "Montpellier": "Montpellier, Languedoc-Roussillon",
     "Toulouse": "Toulouse, Midi-Pyrénées",
     "Corse": "Corse",

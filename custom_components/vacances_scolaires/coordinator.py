@@ -64,13 +64,15 @@ class VacancesDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> dict:
         """Fetch data from the API."""
         try:
-            # Try to fetch fresh data from API
             success = await self.api.async_fetch_vacances()
             if not success:
-                raise UpdateFailed("Failed to fetch vacances data from API")
+                _LOGGER.warning(
+                    "Vacances data unavailable (API unreachable and no cache); "
+                    "integration will report empty state until data is available"
+                )
             return self._get_data()
         except Exception as err:
-            _LOGGER.error(f"Error fetching vacances: {err}", exc_info=True)
+            _LOGGER.error("Error fetching vacances: %s", err, exc_info=True)
             raise UpdateFailed(f"Error fetching vacances: {err}") from err
 
     def _get_data(self) -> dict:

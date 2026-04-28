@@ -31,7 +31,7 @@ class VacancesScolairesAPI:
     """Handle vacances scolaires data and logic."""
 
     _cache_dir: Optional[str]
-    _vacances: list[dict[str, Any]] = []
+    _vacances: list[dict[str, Any]]
     _use_static_data: bool
 
     def __init__(
@@ -115,6 +115,23 @@ class VacancesScolairesAPI:
         return os.path.join(
             self._cache_dir, f"vacances_{safe_zone}_{safe_academy}.json"
         )
+
+    async def async_clear_cache(self) -> None:
+        """Delete the cache file for this zone/academy if it exists."""
+        cache_path = self._get_cache_path()
+        if not cache_path:
+            return
+
+        def _delete() -> None:
+            try:
+                os.remove(cache_path)
+                _LOGGER.debug("Deleted cache file %s", cache_path)
+            except FileNotFoundError:
+                pass
+            except OSError as e:
+                _LOGGER.warning("Failed to delete cache file %s: %s", cache_path, e)
+
+        await asyncio.to_thread(_delete)
 
     async def _is_cache_valid(self) -> bool:
         """Check if cache file exists and is still valid."""
@@ -200,7 +217,6 @@ class VacancesScolairesAPI:
 
         # If cache is invalid or doesn't exist, fetch from API
         try:
-            # Create SSL context based on verify_ssl setting
             ssl_context: ssl.SSLContext | bool = True if self.verify_ssl else False
 
             async with aiohttp.ClientSession(
@@ -265,7 +281,6 @@ class VacancesScolairesAPI:
                     VACANCES_API_URL,
                     params=params,
                     timeout=aiohttp.ClientTimeout(total=API_TIMEOUT),
-                    ssl=self.verify_ssl,  # Changed to self.verify_ssl
                 ) as resp:
                     _LOGGER.debug("API response status: %d", resp.status)
                     if resp.status == 200:
@@ -363,17 +378,19 @@ class VacancesScolairesAPI:
                     )
                     continue
 
-                # Only add if this vacation applies to our zone
-                # The API returns values like "Zone A", "Zone B", etc.
-                expected_zone_format: Optional[str] = f"Zone {zone_letter}"
-                if zones_str != expected_zone_format:
-                    _LOGGER.debug(
-                        "Skipping vacation '%s' with zones '%s' (looking for '%s')",
-                        record.get("description", "N/A"),
-                        zones_str,
-                        expected_zone_format,
-                    )
-                    continue
+                # For métropole zones (A/B/C), the API returns "Zone A" etc. in the
+                # zones field — verify it matches. For DOM-TOM the query already
+                # filters by location so there is no zones field to check.
+                if self.zone in ZONES:
+                    expected_zone_format: Optional[str] = f"Zone {zone_letter}"
+                    if zones_str != expected_zone_format:
+                        _LOGGER.debug(
+                            "Skipping vacation '%s' with zones '%s' (looking for '%s')",
+                            record.get("description", "N/A"),
+                            zones_str,
+                            expected_zone_format,
+                        )
+                        continue
 
                 # If academy is specified, filter by location (academy name)
                 if self.academy and location_str and location_str != self.academy:
