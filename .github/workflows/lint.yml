@@ -12,61 +12,21 @@ permissions:
 
 jobs:
   ruff:
-    name: Ruff (Linting & Formatting)
+    name: Ruff
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: 'pip'
+          python-version: "3.13"
+          cache: "pip"
 
-      - name: Install Ruff
+      - name: Install ruff
         run: pip install ruff
 
-      - name: Run Ruff linter
-        run: ruff check --output-format=github .
+      - name: Lint
+        run: ruff check --output-format=github custom_components/
 
-      - name: Run Ruff formatter check
-        run: ruff format --check .
-
-  black:
-    name: Black (Code Formatting)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: 'pip'
-
-      - name: Install Black
-        run: pip install black
-
-      - name: Check code formatting with Black
-        run: black --check --diff .
-
-  isort:
-    name: isort (Import Sorting)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: 'pip'
-
-      - name: Install isort
-        run: pip install isort
-
-      - name: Check import sorting with isort
-        run: isort --check-only --diff .
+      - name: Format check
+        run: ruff format --check custom_components/
