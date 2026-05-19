@@ -1,6 +1,6 @@
 """Config flow for vacances_scolaires_fr integration."""
 
-from typing import Any, Optional
+from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
@@ -26,17 +26,17 @@ from .const import (
 )
 
 
-class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
     """Handle a config flow for vacances_scolaires_fr."""
 
     VERSION = 1
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the config flow."""
-        self._selected_zone: Optional[str] = None
+        self._selected_zone: str | None = None
 
     @staticmethod
-    @callback
+    @callback  # type: ignore[untyped-decorator]
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
     ) -> "VacancesScolairesOptionsFlow":
@@ -44,7 +44,7 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return VacancesScolairesOptionsFlow(config_entry)
 
     async def async_step_user(
-        self, user_input: Optional[dict[str, Any]] = None
+        self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the initial step (zone selection)."""
         if user_input is not None:
@@ -79,7 +79,7 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_academy(
-        self, user_input: Optional[dict[str, Any]] = None
+        self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the academy selection step."""
         if user_input is not None:
@@ -163,20 +163,20 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
     """Handle options flow for vacances_scolaires_fr."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry):
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
-        self._selected_zone: Optional[str] = None
+        self._selected_zone: str | None = None
 
     async def async_step_init(
-        self, user_input: Optional[dict[str, Any]] = None
+        self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options - main menu."""
         if user_input is not None:
             choice = user_input.get("option_type")
             if choice == "zone_academy":
                 return await self.async_step_zone()
-            elif choice == "advanced":
+            if choice == "advanced":
                 return await self.async_step_advanced()
 
         # Get current configuration
@@ -223,7 +223,7 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_zone(
-        self, user_input: Optional[dict[str, Any]] = None
+        self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage zone selection."""
         if user_input is not None:
@@ -275,7 +275,7 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_academy(
-        self, user_input: Optional[dict[str, Any]] = None
+        self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the academy selection step in options."""
         if user_input is not None:
@@ -352,7 +352,7 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
         default_academy = (
             current_academy
             if current_academy in academies
-            else list(academies.keys())[0]
+            else next(iter(academies.keys()))
         )
 
         schema = vol.Schema(
@@ -372,7 +372,7 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_advanced(
-        self, user_input: Optional[dict[str, Any]] = None
+        self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle advanced options."""
         if user_input is not None:

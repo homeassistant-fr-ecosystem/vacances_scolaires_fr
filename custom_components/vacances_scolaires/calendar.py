@@ -71,7 +71,10 @@ class VacancesScholairesCalendar(
         return None
 
     async def async_get_events(
-        self, hass: HomeAssistant, start_date: datetime, end_date: datetime
+        self,
+        _hass: HomeAssistant,
+        start_date: datetime,
+        end_date: datetime,
     ) -> list[CalendarEvent]:
         """Return events in the given date range."""
         events = []

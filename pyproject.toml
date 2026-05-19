@@ -84,15 +84,18 @@ warn_unused_ignores = true
 check_untyped_defs = true
 no_implicit_reexport = true
 strict_equality = true
+disable_error_code = ["misc"]
 exclude = ['tests/', '.venv/']
 
 [[tool.mypy.overrides]]
 module = "homeassistant.*"
 ignore_missing_imports = true
+follow_imports = "skip"
 
 [[tool.mypy.overrides]]
-module = "pytest_homeassistant_custom_component.*"
+module = "voluptuous.*"
 ignore_missing_imports = true
+follow_imports = "skip"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

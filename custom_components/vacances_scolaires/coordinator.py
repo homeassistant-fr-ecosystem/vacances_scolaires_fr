@@ -2,6 +2,7 @@
 
 import logging
 from datetime import timedelta
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -61,7 +62,7 @@ class VacancesDataUpdateCoordinator(DataUpdateCoordinator):
         self.verify_ssl = verify_ssl
         self.timezone = custom_timezone
 
-    async def _async_update_data(self) -> dict:
+    async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from the API."""
         try:
             success = await self.api.async_fetch_vacances()
@@ -73,9 +74,10 @@ class VacancesDataUpdateCoordinator(DataUpdateCoordinator):
             return self._get_data()
         except Exception as err:
             _LOGGER.error("Error fetching vacances: %s", err, exc_info=True)
-            raise UpdateFailed(f"Error fetching vacances: {err}") from err
+            msg = f"Error fetching vacances: {err}"
+            raise UpdateFailed(msg) from err
 
-    def _get_data(self) -> dict:
+    def _get_data(self) -> dict[str, Any]:
         """Get fresh data from API."""
         return {
             "en_cours": self.api.get_vacances_en_cours(),

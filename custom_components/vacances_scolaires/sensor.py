@@ -131,7 +131,8 @@ class JoursAvantVacancesSensor(
     @property
     def native_value(self) -> int | None:
         """Return sensor state."""
-        return self.coordinator.data.get("jours_avant")
+        value = self.coordinator.data.get("jours_avant")
+        return int(value) if value is not None else None
 
 
 class ZoneScholaireSensor(

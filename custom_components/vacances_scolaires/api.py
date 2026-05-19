@@ -4,11 +4,11 @@ import asyncio
 import bisect
 import json
 import logging
-import os
 import re
 import ssl
-from datetime import datetime
-from typing import Any, Optional
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 from zoneinfo import ZoneInfo
 
 import aiohttp
@@ -30,25 +30,24 @@ API_LIMIT = 100  # Maximum number of records to fetch
 class VacancesScolairesAPI:
     """Handle vacances scolaires data and logic."""
 
-    _cache_dir: Optional[str]
+    _cache_dir: str | None
     _vacances: list[dict[str, Any]]
     _use_static_data: bool
 
     def __init__(
         self,
         zone: str,
-        academy: Optional[str] = None,
-        hass_config_path: Optional[str] = None,
+        academy: str | None = None,
+        hass_config_path: str | None = None,
         verify_ssl: bool = True,
-        custom_timezone: Optional[str] = None,
+        custom_timezone: str | None = None,
     ):
         """Initialize API with selected zone and optional academy."""
         # Validate zone (métropole ou DOM-TOM)
         all_zones = ZONES + ZONES_DOMTOM
         if zone not in all_zones:
-            raise ValueError(
-                f"Invalid zone '{zone}'. Must be one of: {', '.join(all_zones)}"
-            )
+            msg = f"Invalid zone '{zone}'. Must be one of: {', '.join(all_zones)}"
+            raise ValueError(msg)
 
         self.zone = zone
         self.verify_ssl = verify_ssl
@@ -58,13 +57,12 @@ class VacancesScolairesAPI:
             # Validate academy belongs to the zone
             zone_academies = ZONES_ACADEMIES.get(zone, {})
             if academy not in zone_academies:
-                raise ValueError(
-                    f"Invalid academy '{academy}' for zone {zone}. Must be one of: {', '.join(zone_academies.keys())}"
-                )
+                msg = f"Invalid academy '{academy}' for zone {zone}. Must be one of: {', '.join(zone_academies.keys())}"
+                raise ValueError(msg)
             self.academy = academy
         else:
             zone_academies = ZONES_ACADEMIES.get(zone, {})
-            self.academy = list(zone_academies.keys())[0] if zone_academies else zone
+            self.academy = next(iter(zone_academies.keys())) if zone_academies else zone
 
         # Déterminer le fuseau horaire
         self.timezone_str = custom_timezone or ZONE_TIMEZONES.get(zone, "Europe/Paris")
@@ -81,8 +79,8 @@ class VacancesScolairesAPI:
 
         # Set cache directory (instance variable instead of global)
         if hass_config_path:
-            self._cache_dir = os.path.join(
-                hass_config_path, ".storage", "vacances_scolaires"
+            self._cache_dir = str(
+                Path(hass_config_path) / ".storage" / "vacances_scolaires"
             )
         else:
             self._cache_dir = None
@@ -101,10 +99,10 @@ class VacancesScolairesAPI:
         """Ensure the cache directory exists."""
         if self._cache_dir:
             await asyncio.to_thread(
-                os.makedirs, self._cache_dir, mode=0o700, exist_ok=True
+                Path(self._cache_dir).mkdir, mode=0o700, parents=True, exist_ok=True
             )
 
-    def _get_cache_path(self) -> Optional[str]:
+    def _get_cache_path(self) -> str | None:
         """Get the cache file path for this zone and academy."""
         if not self._cache_dir:
             return None
@@ -112,9 +110,7 @@ class VacancesScolairesAPI:
         # Only allow alphanumeric, underscore, and hyphen characters
         safe_academy = re.sub(r"[^\w\-]", "_", self.academy)
         safe_zone = re.sub(r"[^\w\-]", "_", self.zone)
-        return os.path.join(
-            self._cache_dir, f"vacances_{safe_zone}_{safe_academy}.json"
-        )
+        return str(Path(self._cache_dir) / f"vacances_{safe_zone}_{safe_academy}.json")
 
     async def async_clear_cache(self) -> None:
         """Delete the cache file for this zone/academy if it exists."""
@@ -124,7 +120,7 @@ class VacancesScolairesAPI:
 
         def _delete() -> None:
             try:
-                os.remove(cache_path)
+                Path(cache_path).unlink()
                 _LOGGER.debug("Deleted cache file %s", cache_path)
             except FileNotFoundError:
                 pass
@@ -140,26 +136,26 @@ class VacancesScolairesAPI:
     def _is_cache_valid_sync(self) -> bool:
         """Check if cache file exists and is still valid (sync)."""
         cache_path = self._get_cache_path()
-        if not cache_path or not os.path.exists(cache_path):
+        if not cache_path or not Path(cache_path).exists():
             return False
 
         try:
-            file_age = datetime.now() - datetime.fromtimestamp(
-                os.path.getmtime(cache_path)
+            file_age = datetime.now(UTC) - datetime.fromtimestamp(
+                Path(cache_path).stat().st_mtime, tz=UTC
             )
             return file_age.days < CACHE_VALIDITY_DAYS
-        except Exception as e:
+        except OSError as e:
             _LOGGER.debug("Error checking cache validity: %s", e)
             return False
 
     def _load_from_cache_sync(self) -> bool:
         """Load vacances data from cache file (sync operation)."""
         cache_path = self._get_cache_path()
-        if not cache_path or not os.path.exists(cache_path):
+        if not cache_path or not Path(cache_path).exists():
             return False
 
         try:
-            with open(cache_path, "r", encoding="utf-8") as f:
+            with Path(cache_path).open(encoding="utf-8") as f:
                 data = json.load(f)
             self._parse_api_data(data)
             _LOGGER.info(
@@ -182,14 +178,14 @@ class VacancesScolairesAPI:
         """Load vacances data from cache file."""
         return await asyncio.to_thread(self._load_from_cache_sync)
 
-    def _save_to_cache_sync(self, data: dict) -> None:
+    def _save_to_cache_sync(self, data: dict[str, Any]) -> None:
         """Save API response to cache file (sync operation)."""
         cache_path = self._get_cache_path()
         if not cache_path:
             return
 
         try:
-            with open(cache_path, "w", encoding="utf-8") as f:
+            with Path(cache_path).open("w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             _LOGGER.debug(
                 "Cached vacances data for Zone %s, Academy %s", self.zone, self.academy
@@ -202,7 +198,7 @@ class VacancesScolairesAPI:
                 e,
             )
 
-    async def _save_to_cache(self, data: dict) -> None:
+    async def _save_to_cache(self, data: dict[str, Any]) -> None:
         """Save API response to cache file."""
         await asyncio.to_thread(self._save_to_cache_sync, data)
 
@@ -217,7 +213,7 @@ class VacancesScolairesAPI:
 
         # If cache is invalid or doesn't exist, fetch from API
         try:
-            ssl_context: ssl.SSLContext | bool = True if self.verify_ssl else False
+            ssl_context: ssl.SSLContext | bool = self.verify_ssl
 
             async with aiohttp.ClientSession(
                 connector=aiohttp.TCPConnector(ssl=ssl_context)
@@ -229,7 +225,7 @@ class VacancesScolairesAPI:
                     zone_letter = (
                         self.zone.upper() if len(self.zone) == 1 else self.zone
                     )
-                    expected_zone_format: Optional[str] = f"Zone {zone_letter}"
+                    expected_zone_format: str | None = f"Zone {zone_letter}"
                 else:
                     # DOM-TOM : utiliser directement le nom de l'académie
                     expected_zone_format = None
@@ -300,12 +296,11 @@ class VacancesScolairesAPI:
                             self.academy,
                         )
                         return True
-                    else:
-                        response_text = await resp.text()
-                        _LOGGER.error(
-                            "API returned status %d: %s", resp.status, response_text
-                        )
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                    response_text = await resp.text()
+                    _LOGGER.error(
+                        "API returned status %d: %s", resp.status, response_text
+                    )
+        except (TimeoutError, aiohttp.ClientError) as err:
             _LOGGER.error(
                 "Failed to fetch from data.gouv.fr API: %s", err, exc_info=True
             )
@@ -333,7 +328,7 @@ class VacancesScolairesAPI:
         self._vacances = []
         self._use_static_data = True
 
-    def _parse_api_data(self, data: dict) -> None:
+    def _parse_api_data(self, data: dict[str, Any]) -> None:
         """Parse API response and extract vacation periods."""
         self._vacances = []
 
@@ -382,7 +377,7 @@ class VacancesScolairesAPI:
                 # zones field — verify it matches. For DOM-TOM the query already
                 # filters by location so there is no zones field to check.
                 if self.zone in ZONES:
-                    expected_zone_format: Optional[str] = f"Zone {zone_letter}"
+                    expected_zone_format: str | None = f"Zone {zone_letter}"
                     if zones_str != expected_zone_format:
                         _LOGGER.debug(
                             "Skipping vacation '%s' with zones '%s' (looking for '%s')",
@@ -446,7 +441,7 @@ class VacancesScolairesAPI:
                 self.academy,
             )
 
-    def get_vacances_en_cours(self) -> Optional[dict[str, Any]]:
+    def get_vacances_en_cours(self) -> dict[str, Any] | None:
         """Get current school holidays if any.
 
         Uses binary search for O(log n) performance since _vacances is sorted by start date.
@@ -482,7 +477,7 @@ class VacancesScolairesAPI:
 
         return None
 
-    def get_prochaines_vacances(self) -> Optional[dict[str, Any]]:
+    def get_prochaines_vacances(self) -> dict[str, Any] | None:
         """Get next school holidays.
 
         Uses binary search for O(log n) performance since _vacances is sorted by start date.
@@ -505,7 +500,7 @@ class VacancesScolairesAPI:
 
         return None
 
-    def get_jours_avant_vacances(self) -> Optional[int]:
+    def get_jours_avant_vacances(self) -> int | None:
         """Get days until next school holidays with timezone awareness."""
         prochaines = self.get_prochaines_vacances()
         if prochaines:
@@ -518,7 +513,7 @@ class VacancesScolairesAPI:
             return int(delta.days)
         return None
 
-    def get_jours_restants_vacances(self) -> Optional[int]:
+    def get_jours_restants_vacances(self) -> int | None:
         """Get remaining days of current school holidays with timezone awareness."""
         vacances_en_cours = self.get_vacances_en_cours()
         if vacances_en_cours:

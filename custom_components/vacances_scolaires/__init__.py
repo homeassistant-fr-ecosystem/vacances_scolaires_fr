@@ -60,7 +60,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if create_calendar:
         platforms.append("calendar")
 
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, platforms)
+    unload_ok: bool = await hass.config_entries.async_unload_platforms(entry, platforms)
 
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
