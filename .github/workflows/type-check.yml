@@ -32,9 +32,9 @@ jobs:
           pip install types-setuptools types-PyYAML
 
       - name: Run mypy type checker
-        run: mypy custom_components/vacances_scolaires_fr --show-error-codes --pretty
+        run: mypy custom_components/vacances_scolaires --show-error-codes --pretty
         continue-on-error: true  # Allow to pass initially while fixing type issues
 
       - name: Run mypy with strict mode (informational)
-        run: mypy custom_components/vacances_scolaires_fr --strict --show-error-codes --pretty
+        run: mypy custom_components/vacances_scolaires --strict --show-error-codes --pretty
         continue-on-error: true

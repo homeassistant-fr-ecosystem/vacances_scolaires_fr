@@ -51,7 +51,8 @@ class ProchainevacancesSensor(
 ):
     """Sensor for next school holidays."""
 
-    _attr_name = "Prochaines vacances"
+    _attr_has_entity_name = True
+    _attr_translation_key = "next_school_holidays"
     _attr_icon = "mdi:calendar-clock"
 
     def __init__(
@@ -104,7 +105,8 @@ class JoursAvantVacancesSensor(
 ):
     """Sensor for days until next school holidays."""
 
-    _attr_name = "Jours avant vacances"
+    _attr_has_entity_name = True
+    _attr_translation_key = "days_until_holidays"
     _attr_icon = "mdi:calendar-range"
     _attr_native_unit_of_measurement = "jours"
 
@@ -139,7 +141,8 @@ class ZoneScholaireSensor(
 ):
     """Sensor for the school zone."""
 
-    _attr_name = "Zone scolaire"
+    _attr_has_entity_name = True
+    _attr_translation_key = "school_zone"
     _attr_icon = "mdi:map-marker"
 
     def __init__(

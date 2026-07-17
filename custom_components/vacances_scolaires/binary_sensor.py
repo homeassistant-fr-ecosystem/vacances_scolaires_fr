@@ -45,7 +45,8 @@ class VacancesEnCoursBinarySensor(
 ):
     """Binary sensor for current school holidays."""
 
-    _attr_name = "Vacances en cours"
+    _attr_has_entity_name = True
+    _attr_translation_key = "school_holidays_on"
     _attr_icon = "mdi:calendar-check"
     _attr_device_class = BinarySensorDeviceClass.OCCUPANCY
 

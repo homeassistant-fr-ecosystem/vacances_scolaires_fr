@@ -2,6 +2,6 @@
   "name": "Vacances Scolaires Fr",
   "render_readme": true,
   "content_in_root": false,
-  "homeassistant": "2021.12.0",
+  "homeassistant": "2024.1.0",
   "country": ["FR"]
 }

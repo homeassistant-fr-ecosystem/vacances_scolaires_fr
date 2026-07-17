@@ -1,0 +1,81 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "School holidays",
+        "description": "Select your school zone:\n{zones_info}",
+        "data": {
+          "zone": "School zone"
+        }
+      },
+      "academy": {
+        "title": "Academy selection",
+        "description": "Select your academy for Zone {zone}",
+        "data": {
+          "academy": "Academy"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This configuration is already registered"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edit configuration",
+        "description": "Current configuration: Zone {current_zone} - {current_academy}\n\nSelect an option to modify.",
+        "data": {
+          "zone_academy": "Zone and Academy (currently: Zone {current_zone}, {current_academy})",
+          "advanced": "Advanced options"
+        }
+      },
+      "zone": {
+        "title": "Edit school zone",
+        "description": "Current configuration: Zone {current_zone} - {current_academy}\n\nSelect your new school zone:\n{zones_info}",
+        "data": {
+          "zone": "School zone"
+        }
+      },
+      "academy": {
+        "title": "Edit academy",
+        "description": "Select your new academy for Zone {zone}",
+        "data": {
+          "academy": "Academy"
+        }
+      },
+      "advanced": {
+        "title": "Advanced options",
+        "description": "Set the integration's advanced options.",
+        "data": {
+          "update_interval": "Update interval (days)",
+          "verify_ssl": "Verify SSL certificate",
+          "create_calendar": "Create calendar entities"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_school_holidays": {
+        "name": "Next school holidays"
+      },
+      "days_until_holidays": {
+        "name": "Days until holidays"
+      },
+      "school_zone": {
+        "name": "School zone"
+      }
+    },
+    "binary_sensor": {
+      "school_holidays_on": {
+        "name": "School holidays on"
+      }
+    },
+    "calendar": {
+      "school_holidays_calendar": {
+        "name": "School holidays"
+      }
+    }
+  }
+}

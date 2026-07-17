@@ -33,7 +33,8 @@ class VacancesScholairesCalendar(
 ):
     """Calendar entity for school holidays."""
 
-    _attr_name = "Vacances scolaires"
+    _attr_has_entity_name = True
+    _attr_translation_key = "school_holidays_calendar"
     _attr_icon = "mdi:calendar"
 
     def __init__(
