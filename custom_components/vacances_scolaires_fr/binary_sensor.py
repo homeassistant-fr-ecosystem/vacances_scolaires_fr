@@ -59,7 +59,7 @@ class VacancesEnCoursBinarySensor(
         self.academy = academy
         self._attr_unique_id = f"school_holidays_on_{zone}_{academy}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"vacances_scolaires_{zone}_{academy}")},
+            identifiers={(DOMAIN, f"vacances_scolaires_fr_{zone}_{academy}")},
             name=f"Vacances scolaires - Zone {zone} ({academy})",
             manufacturer="Ministère de l'Éducation",
             model="Calendrier scolaire",

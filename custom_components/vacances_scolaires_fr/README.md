@@ -1,6 +1,6 @@
 # Vacances Scolaires France - Home Assistant Integration
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1+-blue.svg)](https://www.home-assistant.io/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -49,13 +49,13 @@ Cette intégration permet de suivre les vacances scolaires françaises directeme
 - Affichage des événements à venir
 
 #### 📊 Capteurs
-- **Vacances en cours** : Nom des vacances actuelles (si applicable)
-- **Prochaines vacances** : Nom des prochaines vacances
+- **Prochaines vacances** : Nom et date de début des prochaines vacances
 - **Jours avant vacances** : Nombre de jours avant les prochaines vacances
-- **Jours restants** : Nombre de jours restants dans les vacances en cours
+- **Zone scolaire** : Zone configurée (A, B, C)
 
 #### 🔘 Capteur binaire
 - **En vacances** : État ON/OFF indiquant si nous sommes en période de vacances
+  - Inclut les attributs `nom`, `debut`, `fin`, `zone`, `academie` et `jours_restants` des vacances en cours
 
 ### Caractéristiques avancées
 
@@ -83,7 +83,7 @@ _Cette intégration n'est pas encore dans le store HACS par défaut._
 
 ### Méthode 2 : Installation manuelle
 
-1. Copiez le dossier `custom_components/vacances_scolaires` vers votre dossier `custom_components`
+1. Copiez le dossier `custom_components/vacances_scolaires_fr` vers votre dossier `custom_components`
 2. Redémarrez Home Assistant
 3. Allez dans Configuration → Intégrations
 4. Cliquez sur "+ Ajouter une intégration"
@@ -100,7 +100,8 @@ _Cette intégration n'est pas encore dans le store HACS par défaut._
 3. **Sélectionnez votre zone** :
    - Zone A (8 académies)
    - Zone B (12 académies)
-   - Zone C (5 académies)
+   - Zone C (6 académies)
+   - DOM-TOM (Guadeloupe, Martinique, Guyane, La Réunion, Mayotte, Nouvelle-Calédonie, Polynésie française, Wallis-et-Futuna, Saint-Pierre-et-Miquelon)
 4. **Sélectionnez votre académie** parmi la liste proposée
 5. **C'est terminé** ! L'intégration créera automatiquement les entités
 
@@ -113,7 +114,7 @@ Besançon, Bordeaux, Clermont-Ferrand, Dijon, Grenoble, Limoges, Lyon, Poitiers
 Aix-Marseille, Amiens, Caen, Lille, Nancy-Metz, Nantes, Nice, Orléans-Tours, Reims, Rennes, Rouen, Strasbourg
 
 #### Zone C
-Créteil, Île-de-France, Montpellier, Toulouse, Corse
+Créteil, Paris, Versailles, Montpellier, Toulouse, Corse
 
 ### Reconfiguration
 
@@ -129,38 +130,21 @@ Pour changer de zone ou d'académie :
 
 ## 🔌 Entités créées
 
-Toutes les entités sont préfixées par `sensor.vacances_scolaires_` ou `calendar.vacances_scolaires`.
+`{zone}` et `{academy}` ci-dessous sont remplacés par votre configuration (ex: `a_lyon`).
 
 ### Calendrier
 
-**Entity ID** : `calendar.vacances_scolaires`
+**Entity ID** : `calendar.school_holidays_calendar_{zone}_{academy}`
 
-- **État** : Prochain événement
-- **Attributs** :
-  - `message` : Nom de la vacation
-  - `start_time` : Date de début
-  - `end_time` : Date de fin
-  - `location` : Zone et académie
-  - `description` : Description de l'événement
+- **État** : Prochain événement de vacances
+- **Événements** : nom, date de début, date de fin
 
 ### Capteurs
 
-#### Vacances en cours
-**Entity ID** : `sensor.vacances_scolaires_en_cours`
-
-- **État** : Nom des vacances (ex: "Vacances de Noël") ou "Aucune"
-- **Attributs** :
-  - `nom` : Nom des vacances
-  - `debut` : Date de début (YYYY-MM-DD)
-  - `fin` : Date de fin (YYYY-MM-DD)
-  - `zone` : Zone concernée
-  - `academie` : Académie concernée
-  - `jours_restants` : Nombre de jours restants
-
 #### Prochaines vacances
-**Entity ID** : `sensor.vacances_scolaires_prochaines`
+**Entity ID** : `sensor.next_school_holidays_{zone}_{academy}`
 
-- **État** : Nom des prochaines vacances
+- **État** : Date de début des prochaines vacances (ISO 8601)
 - **Attributs** :
   - `nom` : Nom des vacances
   - `debut` : Date de début
@@ -170,23 +154,31 @@ Toutes les entités sont préfixées par `sensor.vacances_scolaires_` ou `calend
   - `jours_avant` : Nombre de jours avant le début
 
 #### Jours avant vacances
-**Entity ID** : `sensor.vacances_scolaires_jours_avant`
+**Entity ID** : `sensor.days_until_holidays_{zone}_{academy}`
 
 - **État** : Nombre de jours (entier)
-- **Unité** : `days`
 
-#### Jours restants
-**Entity ID** : `sensor.vacances_scolaires_jours_restants`
+#### Zone scolaire
+**Entity ID** : `sensor.school_zone_{zone}_{academy}`
 
-- **État** : Nombre de jours (entier)
-- **Unité** : `days`
+- **État** : Zone configurée (A, B, C, ou territoire DOM-TOM)
+- **Attributs** : `zone`, `academie`, `timezone`
 
 ### Capteur binaire
 
-**Entity ID** : `binary_sensor.vacances_scolaires`
+**Entity ID** : `binary_sensor.school_holidays_on_{zone}_{academy}`
 
 - **État** : `on` pendant les vacances, `off` hors vacances
-- **Device class** : `presence`
+- **Device class** : `occupancy`
+- **Attributs** (si en vacances) : `nom`, `debut`, `fin`, `zone`, `academie`, `jours_restants`
+
+## 🔧 Services
+
+### `vacances_scolaires_fr.clear_cache`
+
+Supprime le cache local et force une actualisation immédiate depuis l'API.
+
+- **Champ** : `config_entry` — la configuration dont le cache doit être vidé
 
 ---
 
@@ -200,7 +192,7 @@ automation:
   - alias: "Notification 7 jours avant les vacances"
     trigger:
       - platform: numeric_state
-        entity_id: sensor.vacances_scolaires_jours_avant
+        entity_id: sensor.days_until_holidays_a_lyon
         below: 8
         above: 6
     action:
@@ -208,8 +200,8 @@ automation:
         data:
           title: "Vacances scolaires bientôt !"
           message: >
-            Les {{ states('sensor.vacances_scolaires_prochaines') }}
-            commencent dans {{ states('sensor.vacances_scolaires_jours_avant') }} jours !
+            Les vacances commencent dans
+            {{ states('sensor.days_until_holidays_a_lyon') }} jours !
 ```
 
 ### Automatisation : Mode vacances
@@ -219,7 +211,7 @@ automation:
   - alias: "Activer mode vacances"
     trigger:
       - platform: state
-        entity_id: binary_sensor.vacances_scolaires
+        entity_id: binary_sensor.school_holidays_on_a_lyon
         to: 'on'
     action:
       - service: input_boolean.turn_on
@@ -233,16 +225,14 @@ automation:
 type: entities
 title: Vacances scolaires
 entities:
-  - entity: binary_sensor.vacances_scolaires
+  - entity: binary_sensor.school_holidays_on_a_lyon
     name: En vacances
-  - entity: sensor.vacances_scolaires_en_cours
-    name: Vacances actuelles
-  - entity: sensor.vacances_scolaires_jours_restants
-    name: Jours restants
-  - entity: sensor.vacances_scolaires_prochaines
+  - entity: sensor.next_school_holidays_a_lyon
     name: Prochaines vacances
-  - entity: sensor.vacances_scolaires_jours_avant
-    name: Dans
+  - entity: sensor.days_until_holidays_a_lyon
+    name: Jours avant
+  - entity: sensor.school_zone_a_lyon
+    name: Zone
 ```
 
 ### Template : Compteur avant vacances
@@ -254,10 +244,10 @@ sensor:
       vacances_countdown:
         friendly_name: "Compte à rebours vacances"
         value_template: >
-          {% if states('sensor.vacances_scolaires_jours_avant') | int > 0 %}
-            Plus que {{ states('sensor.vacances_scolaires_jours_avant') }} jours !
-          {% elif is_state('binary_sensor.vacances_scolaires', 'on') %}
-            En vacances ! ({{ states('sensor.vacances_scolaires_jours_restants') }} jours restants)
+          {% if states('sensor.days_until_holidays_a_lyon') | int > 0 %}
+            Plus que {{ states('sensor.days_until_holidays_a_lyon') }} jours !
+          {% elif is_state('binary_sensor.school_holidays_on_a_lyon', 'on') %}
+            En vacances ! ({{ state_attr('binary_sensor.school_holidays_on_a_lyon', 'jours_restants') }} jours restants)
           {% else %}
             Pas de vacances prévues
           {% endif %}
@@ -271,7 +261,7 @@ sensor:
 
 **Vérifications** :
 1. Vérifiez les logs : Configuration → Logs
-2. Recherchez : `vacances_scolaires` ou `Vacances`
+2. Recherchez : `vacances_scolaires_fr` ou `Vacances`
 3. Erreurs courantes :
    - Problème d'accès à l'API data.gouv.fr
    - Cache corrompu
@@ -280,7 +270,7 @@ sensor:
 **Solutions** :
 ```bash
 # Supprimer le cache
-rm -rf .storage/vacances_scolaires/
+rm -rf .storage/vacances_scolaires_fr/
 
 # Redémarrer Home Assistant
 ```
@@ -305,11 +295,10 @@ rm -rf .storage/vacances_scolaires/
 
 ### Performance lente
 
-**Cause** : Rare avec la version 2.0 (recherche binaire)
+**Cause** : Rare, grâce à la recherche binaire utilisée pour trouver les vacances en cours/à venir
 
 **Vérification** :
 - Nombre de périodes de vacances dans les logs
-- Version de l'intégration (doit être ≥ 2.0)
 
 ---
 
@@ -324,7 +313,7 @@ rm -rf .storage/vacances_scolaires/
 
 ### Cache et performances
 
-- **Localisation** : `.storage/vacances_scolaires/`
+- **Localisation** : `.storage/vacances_scolaires_fr/`
 - **Nom fichier** : `vacances_{zone}_{academie}.json`
 - **Validité** : 7 jours
 - **Permissions** : 0700 (propriétaire uniquement)
@@ -337,7 +326,7 @@ rm -rf .storage/vacances_scolaires/
 ### Mise à jour manuelle
 
 1. Téléchargez la dernière version
-2. Remplacez le dossier `custom_components/vacances_scolaires`
+2. Remplacez le dossier `custom_components/vacances_scolaires_fr`
 3. Redémarrez Home Assistant
 4. Vérifiez les logs pour confirmer la nouvelle version
 
@@ -399,7 +388,7 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 
 ---
 
-**Version** : 0.1.0
+**Version** : 1.0.0
 **Dernière mise à jour** : 2026-01-27
 **Auteur** : @homeassistant-fr-ecosystem
 **Home Assistant** : 2024.1+

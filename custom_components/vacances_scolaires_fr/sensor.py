@@ -1,7 +1,7 @@
 """Sensors for vacances_scolaires_fr integration."""
 
 import logging
-from typing import Any
+from typing import Any, Optional, cast
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -64,7 +64,7 @@ class ProchainevacancesSensor(
         self.academy = academy
         self._attr_unique_id = f"next_school_holidays_{zone}_{academy}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"vacances_scolaires_{zone}_{academy}")},
+            identifiers={(DOMAIN, f"vacances_scolaires_fr_{zone}_{academy}")},
             name=f"Vacances scolaires - Zone {zone} ({academy})",
             manufacturer="Ministère de l'Éducation",
             model="Calendrier scolaire",
@@ -119,7 +119,7 @@ class JoursAvantVacancesSensor(
         self.academy = academy
         self._attr_unique_id = f"days_until_holidays_{zone}_{academy}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"vacances_scolaires_{zone}_{academy}")},
+            identifiers={(DOMAIN, f"vacances_scolaires_fr_{zone}_{academy}")},
             name=f"Vacances scolaires - Zone {zone} ({academy})",
             manufacturer="Ministère de l'Éducation",
             model="Calendrier scolaire",
@@ -133,7 +133,7 @@ class JoursAvantVacancesSensor(
     @property
     def native_value(self) -> int | None:
         """Return sensor state."""
-        return self.coordinator.data.get("jours_avant")
+        return cast(Optional[int], self.coordinator.data.get("jours_avant"))
 
 
 class ZoneScholaireSensor(
@@ -154,7 +154,7 @@ class ZoneScholaireSensor(
         self.academy = academy
         self._attr_unique_id = f"school_zone_{zone}_{academy}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"vacances_scolaires_{zone}_{academy}")},
+            identifiers={(DOMAIN, f"vacances_scolaires_fr_{zone}_{academy}")},
             name=f"Vacances scolaires - Zone {zone} ({academy})",
             manufacturer="Ministère de l'Éducation",
             model="Calendrier scolaire",

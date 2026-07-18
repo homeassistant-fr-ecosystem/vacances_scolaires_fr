@@ -1,7 +1,10 @@
 """Constants for vacances_scolaires_fr integration."""
 
-DOMAIN = "vacances_scolaires"
+DOMAIN = "vacances_scolaires_fr"
 PLATFORMS = ["calendar", "sensor", "binary_sensor"]
+
+SERVICE_CLEAR_CACHE = "clear_cache"
+CONF_CONFIG_ENTRY = "config_entry"
 
 CONF_ZONE = "zone"
 CONF_ACADEMY = "academy"

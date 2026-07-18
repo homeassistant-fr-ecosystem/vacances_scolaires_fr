@@ -1,5 +1,5 @@
 {
-  "domain": "vacances_scolaires",
+  "domain": "vacances_scolaires_fr",
   "name": "Vacances Scolaires FR",
   "codeowners": ["@homeassistant-fr-ecosystem"],
   "config_flow": true,

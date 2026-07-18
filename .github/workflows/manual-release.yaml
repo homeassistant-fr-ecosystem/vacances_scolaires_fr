@@ -19,15 +19,15 @@ jobs:
         run: |
           version="${{ github.event.release.tag_name }}"
           version="${version#v}"
-          jq --arg v "$version" '.version = $v' custom_components/vacances_scolaires/manifest.json > tmp.json
-          mv tmp.json custom_components/vacances_scolaires/manifest.json
+          jq --arg v "$version" '.version = $v' custom_components/vacances_scolaires_fr/manifest.json > tmp.json
+          mv tmp.json custom_components/vacances_scolaires_fr/manifest.json
 
       - name: Create release zip
         run: |
           cd custom_components
-          zip -r ../vacances_scolaires.zip vacances_scolaires
+          zip -r ../vacances_scolaires_fr.zip vacances_scolaires_fr
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v2
         with:
-          files: vacances_scolaires.zip
+          files: vacances_scolaires_fr.zip

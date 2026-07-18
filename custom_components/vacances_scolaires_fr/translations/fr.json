@@ -77,6 +77,23 @@
         "name": "Vacances scolaires"
       }
     }
+  },
+  "exceptions": {
+    "clear_cache_failed": {
+      "message": "Échec de la suppression du cache : {error}"
+    }
+  },
+  "services": {
+    "clear_cache": {
+      "name": "Vider le cache",
+      "description": "Supprime les données de vacances scolaires en cache et force une actualisation depuis l'API.",
+      "fields": {
+        "config_entry": {
+          "name": "Configuration",
+          "description": "La configuration vacances_scolaires_fr dont le cache doit être vidé."
+        }
+      }
+    }
   }
 }
 

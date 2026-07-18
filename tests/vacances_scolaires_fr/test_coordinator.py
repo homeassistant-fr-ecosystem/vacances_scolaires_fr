@@ -1,14 +1,12 @@
 """Tests for VacancesDataUpdateCoordinator."""
 
-from datetime import date
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.core import HomeAssistant
 
-from custom_components.vacances_scolaires.api import VacancesScolairesAPI
-from custom_components.vacances_scolaires.coordinator import (
+from custom_components.vacances_scolaires_fr.api import VacancesScolairesAPI
+from custom_components.vacances_scolaires_fr.coordinator import (
     VacancesDataUpdateCoordinator,
 )
 
@@ -47,13 +45,15 @@ class TestCoordinatorInit:
         self, hass: HomeAssistant, mock_entry: MagicMock
     ) -> None:
         with patch(
-            "custom_components.vacances_scolaires.coordinator.VacancesScolairesAPI"
+            "custom_components.vacances_scolaires_fr.coordinator.VacancesScolairesAPI"
         ) as mock_api_cls:
-            coordinator = VacancesDataUpdateCoordinator(
-                hass, mock_entry, ZONE, ACADEMY
-            )
+            coordinator = VacancesDataUpdateCoordinator(hass, mock_entry, ZONE, ACADEMY)
         mock_api_cls.assert_called_once_with(
-            ZONE, ACADEMY, hass.config.path(), verify_ssl=True, custom_timezone="Europe/Paris"
+            ZONE,
+            ACADEMY,
+            hass.config.path(),
+            verify_ssl=True,
+            custom_timezone="Europe/Paris",
         )
         assert coordinator.zone == ZONE
         assert coordinator.academy == ACADEMY
@@ -63,11 +63,9 @@ class TestCoordinatorInit:
     ) -> None:
         mock_entry.data["update_interval"] = 3
         with patch(
-            "custom_components.vacances_scolaires.coordinator.VacancesScolairesAPI"
+            "custom_components.vacances_scolaires_fr.coordinator.VacancesScolairesAPI"
         ):
-            coordinator = VacancesDataUpdateCoordinator(
-                hass, mock_entry, ZONE, ACADEMY
-            )
+            coordinator = VacancesDataUpdateCoordinator(hass, mock_entry, ZONE, ACADEMY)
         assert coordinator.update_interval.days == 3
 
     async def test_options_override_data(
@@ -75,7 +73,7 @@ class TestCoordinatorInit:
     ) -> None:
         mock_entry.options = {"update_interval": 14, "verify_ssl": False}
         with patch(
-            "custom_components.vacances_scolaires.coordinator.VacancesScolairesAPI"
+            "custom_components.vacances_scolaires_fr.coordinator.VacancesScolairesAPI"
         ) as mock_api_cls:
             VacancesDataUpdateCoordinator(hass, mock_entry, ZONE, ACADEMY)
         _, kwargs = mock_api_cls.call_args
@@ -87,7 +85,7 @@ class TestCoordinatorUpdate:
         self, hass: HomeAssistant, mock_entry: MagicMock
     ) -> None:
         with patch(
-            "custom_components.vacances_scolaires.coordinator.VacancesScolairesAPI",
+            "custom_components.vacances_scolaires_fr.coordinator.VacancesScolairesAPI",
             return_value=MagicMock(
                 async_fetch_vacances=AsyncMock(return_value=True),
                 get_vacances_en_cours=MagicMock(return_value=None),
@@ -96,9 +94,7 @@ class TestCoordinatorUpdate:
                 get_jours_restants_vacances=MagicMock(return_value=None),
             ),
         ):
-            coordinator = VacancesDataUpdateCoordinator(
-                hass, mock_entry, ZONE, ACADEMY
-            )
+            coordinator = VacancesDataUpdateCoordinator(hass, mock_entry, ZONE, ACADEMY)
             data = await coordinator._async_update_data()
 
         assert "en_cours" in data
@@ -111,7 +107,7 @@ class TestCoordinatorUpdate:
     ) -> None:
         current = MOCK_VACANCES[0]
         with patch(
-            "custom_components.vacances_scolaires.coordinator.VacancesScolairesAPI",
+            "custom_components.vacances_scolaires_fr.coordinator.VacancesScolairesAPI",
             return_value=MagicMock(
                 async_fetch_vacances=AsyncMock(return_value=True),
                 get_vacances_en_cours=MagicMock(return_value=current),
@@ -120,9 +116,7 @@ class TestCoordinatorUpdate:
                 get_jours_restants_vacances=MagicMock(return_value=5),
             ),
         ):
-            coordinator = VacancesDataUpdateCoordinator(
-                hass, mock_entry, ZONE, ACADEMY
-            )
+            coordinator = VacancesDataUpdateCoordinator(hass, mock_entry, ZONE, ACADEMY)
             data = await coordinator._async_update_data()
 
         assert data["en_cours"] == current
@@ -132,7 +126,7 @@ class TestCoordinatorUpdate:
         self, hass: HomeAssistant, mock_entry: MagicMock
     ) -> None:
         with patch(
-            "custom_components.vacances_scolaires.coordinator.VacancesScolairesAPI",
+            "custom_components.vacances_scolaires_fr.coordinator.VacancesScolairesAPI",
             return_value=MagicMock(
                 async_fetch_vacances=AsyncMock(return_value=False),
                 get_vacances_en_cours=MagicMock(return_value=None),
@@ -141,9 +135,7 @@ class TestCoordinatorUpdate:
                 get_jours_restants_vacances=MagicMock(return_value=None),
             ),
         ):
-            coordinator = VacancesDataUpdateCoordinator(
-                hass, mock_entry, ZONE, ACADEMY
-            )
+            coordinator = VacancesDataUpdateCoordinator(hass, mock_entry, ZONE, ACADEMY)
             data = await coordinator._async_update_data()
 
         assert data["en_cours"] is None

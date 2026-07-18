@@ -2,9 +2,17 @@
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.typing import ConfigType
 
 from .const import CONF_CREATE_CALENDAR, CONF_ZONE, DEFAULT_CREATE_CALENDAR, DOMAIN
 from .coordinator import VacancesDataUpdateCoordinator
+from .services import async_setup_services
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the vacances_scolaires_fr integration (register services)."""
+    async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -60,7 +68,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if create_calendar:
         platforms.append("calendar")
 
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, platforms)
+    unload_ok = bool(await hass.config_entries.async_unload_platforms(entry, platforms))
 
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)

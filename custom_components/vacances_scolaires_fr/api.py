@@ -9,7 +9,7 @@ import re
 import ssl
 from datetime import datetime
 from typing import Any, Optional
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import aiohttp
 
@@ -70,7 +70,7 @@ class VacancesScolairesAPI:
         self.timezone_str = custom_timezone or ZONE_TIMEZONES.get(zone, "Europe/Paris")
         try:
             self.timezone = ZoneInfo(self.timezone_str)
-        except Exception as e:
+        except (ZoneInfoNotFoundError, ValueError) as e:
             _LOGGER.warning(
                 "Invalid timezone %s, falling back to Europe/Paris: %s",
                 self.timezone_str,
@@ -82,7 +82,7 @@ class VacancesScolairesAPI:
         # Set cache directory (instance variable instead of global)
         if hass_config_path:
             self._cache_dir = os.path.join(
-                hass_config_path, ".storage", "vacances_scolaires"
+                hass_config_path, ".storage", "vacances_scolaires_fr"
             )
         else:
             self._cache_dir = None
@@ -148,7 +148,7 @@ class VacancesScolairesAPI:
                 os.path.getmtime(cache_path)
             )
             return file_age.days < CACHE_VALIDITY_DAYS
-        except Exception as e:
+        except OSError as e:
             _LOGGER.debug("Error checking cache validity: %s", e)
             return False
 
@@ -169,7 +169,7 @@ class VacancesScolairesAPI:
                 self.academy,
             )
             return True
-        except Exception as e:
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
             _LOGGER.warning(
                 "Failed to load cache for Zone %s, Academy %s: %s",
                 self.zone,
@@ -194,7 +194,7 @@ class VacancesScolairesAPI:
             _LOGGER.debug(
                 "Cached vacances data for Zone %s, Academy %s", self.zone, self.academy
             )
-        except Exception as e:
+        except (OSError, TypeError, ValueError) as e:
             _LOGGER.warning(
                 "Failed to save cache for Zone %s, Academy %s: %s",
                 self.zone,

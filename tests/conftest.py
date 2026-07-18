@@ -1,4 +1,4 @@
-"""Top-level pytest configuration for vacances_scolaires tests."""
+"""Top-level pytest configuration for vacances_scolaires_fr tests."""
 
 import sys
 from pathlib import Path

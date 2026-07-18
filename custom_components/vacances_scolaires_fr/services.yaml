@@ -1,0 +1,7 @@
+clear_cache:
+  fields:
+    config_entry:
+      required: true
+      selector:
+        config_entry:
+          integration: vacances_scolaires_fr

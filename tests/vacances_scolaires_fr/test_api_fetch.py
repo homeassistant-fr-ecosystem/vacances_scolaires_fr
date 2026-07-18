@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import aiohttp
 import pytest
 
-from custom_components.vacances_scolaires.api import VacancesScolairesAPI
+from custom_components.vacances_scolaires_fr.api import VacancesScolairesAPI
 
 from .conftest import ACADEMY, MOCK_API_RESPONSE, ZONE
 
@@ -85,6 +85,7 @@ class TestAsyncFetchVacances:
         cache_path = api_with_cache._get_cache_path()
         assert cache_path is not None
         import os
+
         os.makedirs(api_with_cache._cache_dir, exist_ok=True)  # type: ignore[arg-type]
         with open(cache_path, "w") as f:
             json.dump(MOCK_API_RESPONSE, f)
@@ -104,6 +105,7 @@ class TestAsyncFetchVacances:
     ) -> None:
         # Write a stale cache file
         import os
+
         os.makedirs(api_with_cache._cache_dir, exist_ok=True)  # type: ignore[arg-type]
         cache_path = api_with_cache._get_cache_path()
         assert cache_path is not None
@@ -133,6 +135,7 @@ class TestAsyncFetchVacances:
         cache_path = api_with_cache._get_cache_path()
         assert cache_path is not None
         import os
+
         assert os.path.exists(cache_path)
         with open(cache_path) as f:
             cached = json.load(f)
@@ -144,6 +147,7 @@ class TestCacheManagement:
         self, api_with_cache: VacancesScolairesAPI
     ) -> None:
         import os
+
         os.makedirs(api_with_cache._cache_dir, exist_ok=True)  # type: ignore[arg-type]
         cache_path = api_with_cache._get_cache_path()
         assert cache_path is not None
@@ -179,6 +183,7 @@ class TestCacheManagement:
         self, api_with_cache: VacancesScolairesAPI
     ) -> None:
         import os
+
         os.makedirs(api_with_cache._cache_dir, exist_ok=True)  # type: ignore[arg-type]
         cache_path = api_with_cache._get_cache_path()
         assert cache_path is not None

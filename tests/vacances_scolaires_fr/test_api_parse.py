@@ -8,9 +8,9 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from custom_components.vacances_scolaires.api import VacancesScolairesAPI
+from custom_components.vacances_scolaires_fr.api import VacancesScolairesAPI
 
-from .conftest import ACADEMY, MOCK_API_RESPONSE, MOCK_VACANCES, ZONE
+from .conftest import ACADEMY, MOCK_API_RESPONSE, ZONE
 
 
 @contextmanager
@@ -22,7 +22,7 @@ def freeze_today(d: date) -> Generator[None, None, None]:
         def now(cls, tz: Any = None) -> "_FakeDatetime":  # type: ignore[override]
             return cls(d.year, d.month, d.day, tzinfo=tz or ZoneInfo("Europe/Paris"))
 
-    with patch("custom_components.vacances_scolaires.api.datetime", _FakeDatetime):
+    with patch("custom_components.vacances_scolaires_fr.api.datetime", _FakeDatetime):
         yield
 
 
@@ -63,7 +63,7 @@ class TestConstructor:
     def test_cache_dir_set_when_path_provided(self, tmp_path: Any) -> None:
         api = VacancesScolairesAPI(ZONE, ACADEMY, hass_config_path=str(tmp_path))
         assert api._cache_dir is not None
-        assert "vacances_scolaires" in api._cache_dir
+        assert "vacances_scolaires_fr" in api._cache_dir
 
 
 class TestParseApiData:
@@ -224,16 +224,12 @@ class TestGetVacancesEnCours:
             result = api_with_vacances.get_vacances_en_cours()
         assert result is None
 
-    def test_includes_first_day(
-        self, api_with_vacances: VacancesScolairesAPI
-    ) -> None:
+    def test_includes_first_day(self, api_with_vacances: VacancesScolairesAPI) -> None:
         with freeze_today(date(2025, 10, 18)):
             result = api_with_vacances.get_vacances_en_cours()
         assert result is not None
 
-    def test_includes_last_day(
-        self, api_with_vacances: VacancesScolairesAPI
-    ) -> None:
+    def test_includes_last_day(self, api_with_vacances: VacancesScolairesAPI) -> None:
         with freeze_today(date(2025, 11, 3)):
             result = api_with_vacances.get_vacances_en_cours()
         assert result is not None

@@ -26,7 +26,7 @@ from .const import (
 )
 
 
-class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
     """Handle a config flow for vacances_scolaires_fr."""
 
     VERSION = 1
@@ -99,7 +99,7 @@ class VacancesScolairesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             # Unique ID scoped to zone+academy so multiple entries are allowed
             await self.async_set_unique_id(
-                f"vacances_scolaires_{self._selected_zone}_{academy}"
+                f"vacances_scolaires_fr_{self._selected_zone}_{academy}"
             )
             self._abort_if_unique_id_configured()
 
@@ -313,7 +313,7 @@ class VacancesScolairesOptionsFlow(config_entries.OptionsFlow):
                 title = f"Vacances scolaires - {self._selected_zone}"
 
             # Clear the old cache before switching to the new zone/academy so
-            # stale files don't accumulate in .storage/vacances_scolaires/
+            # stale files don't accumulate in .storage/vacances_scolaires_fr/
             old_coordinator = (
                 self.hass.data.get(DOMAIN, {})
                 .get(self.config_entry.entry_id, {})

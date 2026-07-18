@@ -1,11 +1,11 @@
-"""Shared fixtures for vacances_scolaires tests."""
+"""Shared fixtures for vacances_scolaires_fr tests."""
 
 from datetime import date
 from typing import Any
 
 import pytest
 
-from custom_components.vacances_scolaires.api import VacancesScolairesAPI
+from custom_components.vacances_scolaires_fr.api import VacancesScolairesAPI
 
 ZONE = "A"
 ACADEMY = "Besançon"
